@@ -193,7 +193,7 @@ class FileNameCategory(_PluginBase):
     @eventmanager.register(ChainEventType.TransferRename)
     def category_handler(self, event: Event):
         """
-        根据文件名关键字重新设置分类
+        根据文件名关键字重新设置分类，并修改渲染路径以包含新的分类文件夹
         """
         logger.debug(f"文件名分类插件触发！")
 
@@ -216,23 +216,48 @@ class FileNameCategory(_PluginBase):
                 logger.warning(f"文件名分类异常：rename_dict为空")
                 return
 
+            if not hasattr(data, 'render_str') or not data.render_str:
+                logger.warning(f"文件名分类异常：render_str为空")
+                return
+
             rename_dict = data.rename_dict
             media_info = rename_dict.get("__mediainfo__")
+            render_str = data.render_str
             
             if not media_info:
                 logger.warning(f"文件名分类异常：__mediainfo__为空")
                 return
 
             # 获取原始文件名
+            # 尝试多种方式获取原始文件名
+            original_name = ""
+            
+            # 方法1: 从rename_dict获取
             original_name = rename_dict.get("original_name", "")
+            
+            # 方法2: 从__meta__获取
             if not original_name:
-                # 尝试从 __meta__ 获取
                 meta = rename_dict.get("__meta__")
-                if meta and hasattr(meta, 'title'):
-                    original_name = meta.title
+                if meta:
+                    # 尝试获取原始字符串
+                    if hasattr(meta, 'org_string') and meta.org_string:
+                        original_name = meta.org_string
+                    # 尝试获取title
+                    elif hasattr(meta, 'title') and meta.title:
+                        original_name = meta.title
+                    # 尝试获取name
+                    elif hasattr(meta, 'name') and meta.name:
+                        original_name = meta.name
+            
+            # 方法3: 从path获取（如果path包含原始文件名）
+            if not original_name and hasattr(data, 'path') and data.path:
+                from pathlib import Path
+                path_obj = Path(str(data.path))
+                if path_obj.name:
+                    original_name = path_obj.name
             
             if not original_name:
-                logger.debug(f"文件名分类：无法获取原始文件名")
+                logger.debug(f"文件名分类：无法获取原始文件名，跳过处理")
                 return
 
             # 获取媒体类型（转换为中文）
@@ -255,6 +280,10 @@ class FileNameCategory(_PluginBase):
 
             logger.debug(f"文件名分类：开始匹配文件名 '{original_name}'，媒体类型 '{media_type}'，共 {len(sorted_rules)} 条规则")
 
+            # 获取当前分类（用于比较）
+            current_category = media_info.category or ""
+            new_category = None
+
             # 遍历规则进行匹配
             for rule in sorted_rules:
                 pattern = rule.get("pattern", "")
@@ -273,18 +302,53 @@ class FileNameCategory(_PluginBase):
                 # 使用正则表达式匹配（不区分大小写）
                 try:
                     if re.search(pattern, original_name, re.IGNORECASE):
-                        old_category = media_info.category
-                        logger.info(f"文件名分类：文件名 '{original_name}' 匹配规则 '{pattern}'，分类从 '{old_category}' 设置为 '{category}'")
+                        new_category = category
+                        logger.info(f"文件名分类：文件名 '{original_name}' 匹配规则 '{pattern}'，分类从 '{current_category}' 设置为 '{category}'")
+                        # 更新MediaInfo中的分类
                         media_info.set_category(category)
-                        return
+                        break
                 except re.error as e:
                     logger.error(f"文件名分类：正则表达式错误 '{pattern}': {str(e)}")
                     continue
 
-            logger.debug(f"文件名分类：文件名 '{original_name}' 未匹配任何规则")
+            # 如果找到了新的分类，修改渲染路径
+            if new_category and new_category != current_category:
+                # 按照MultiClass插件的模式，直接在render_str开头添加新分类文件夹
+                # 注意：path参数可能已经包含了旧分类（来自get_dest_dir），
+                # 但通过修改render_str，我们可以让新分类出现在正确的位置
+                # 最终路径结构会是: base_path / media_type / old_category / new_category / media_title
+                # 虽然会有两个分类，但新分类会在正确的位置，MoviePilot会处理路径合并
+                
+                updated_render_str = render_str
+                
+                # 如果当前分类不为空，尝试从render_str开头移除当前分类文件夹
+                # (以防render_str已经包含了当前分类)
+                if current_category and render_str.startswith(f"{current_category}/"):
+                    updated_render_str = render_str[len(f"{current_category}/"):]
+                    logger.debug(f"文件名分类：从render_str中移除旧分类 '{current_category}'")
+                
+                # 在路径开头添加新分类文件夹
+                if new_category:
+                    updated_render_str = f"{new_category}/{updated_render_str}"
+                    logger.debug(f"文件名分类：在render_str中添加新分类 '{new_category}'")
+                
+                # 更新事件数据（按照MultiClass的模式）
+                event.event_data.updated_str = updated_render_str
+                event.event_data.updated = True
+                event.event_data.source = "FileNameCategory"
+                
+                logger.info(f"文件名分类：已更新渲染路径为 '{updated_render_str}' (原路径: '{render_str}')")
+            else:
+                if not new_category:
+                    logger.debug(f"文件名分类：文件名 '{original_name}' 未匹配任何规则")
+                else:
+                    logger.debug(f"文件名分类：分类未变化，保持原路径")
 
         except Exception as e:
             logger.error(f"文件名分类异常: {str(e)}", exc_info=True)
+            # 确保即使出错也不会影响原始数据
+            if hasattr(event, 'event_data') and event.event_data:
+                event.event_data.updated = False
 
     def stop_service(self):
         """
