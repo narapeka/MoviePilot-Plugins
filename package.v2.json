@@ -1,0 +1,14 @@
+{
+  "FileNameCategory": {
+    "name": "文件名二级分类",
+    "description": "根据原始文件名中的关键字（支持正则表达式）来自定义媒体分类。",
+    "labels": "文件整理",
+    "version": "1.0",
+    "icon": "Bookstack_A.png",
+    "author": "narapeka",
+    "level": 1,
+    "history": {
+      "v1.0": "根据原始文件名中的关键字（支持正则表达式）来自定义媒体分类"
+    }
+  }
+}
