@@ -161,12 +161,44 @@ class FileNameCategory(_PluginBase):
                                         'component': 'VAlert',
                                         'props': {
                                             'type': 'info',
-                                            'variant': 'tonal',
-                                            'text': '规则格式: 路径#关键字#分类 (每行一条规则，按顺序匹配，第一个匹配的规则生效)\n'
-                                                    '- 路径: 源文件路径过滤，包含匹配，留空表示匹配所有路径\n'
-                                                    '- 关键字: 支持正则表达式，不区分大小写，多个关键字用 | 分隔\n'
-                                                    '- 分类: 目标分类名称，支持多级路径如 BHYS/UHD\n'
-                                                    '- 覆盖二级分类: 开启时替换原分类，关闭时在原分类后追加'
+                                            'variant': 'tonal'
+                                        },
+                                        'content': [
+                                            {
+                                                'component': 'div',
+                                                'html': '''<b>规则格式:</b> 路径#关键字#分类<br>
+                                                <ul style="margin: 8px 0; padding-left: 20px;">
+                                                    <li><b>路径:</b> 目标路径过滤，包含匹配，留空表示匹配所有路径</li>
+                                                    <li><b>关键字:</b> 支持正则表达式，不区分大小写，多个关键字用 | 分隔</li>
+                                                    <li><b>分类:</b> 目标分类名称，支持多级路径如 BHYS/UHD</li>
+                                                </ul>
+                                                <b>说明:</b> 每行一条规则，按顺序匹配，第一个匹配的规则生效<br>
+                                                <b>覆盖二级分类:</b> 开启时替换原分类，关闭时在原分类后追加'''
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        'component': 'VRow',
+                        'content': [
+                            {
+                                'component': 'VCol',
+                                'props': {
+                                    'cols': 12
+                                },
+                                'content': [
+                                    {
+                                        'component': 'VTextarea',
+                                        'props': {
+                                            'model': 'movie_rules',
+                                            'label': '电影分类规则',
+                                            'placeholder': '/library/movies/uhd#UHD|4K|2160p#UHD电影\n#REMUX|Blu-?Ray#REMUX电影\n#1080p#高清电影',
+                                            'rows': 6,
+                                            'hint': '电影分类规则，每行一条',
+                                            'persistent-hint': True
                                         }
                                     }
                                 ]
@@ -179,30 +211,7 @@ class FileNameCategory(_PluginBase):
                             {
                                 'component': 'VCol',
                                 'props': {
-                                    'cols': 12,
-                                    'md': 6
-                                },
-                                'content': [
-                                    {
-                                        'component': 'VTextarea',
-                                        'props': {
-                                            'model': 'movie_rules',
-                                            'label': '电影分类规则',
-                                            'placeholder': '/downloads/uhd#UHD|4K|2160p#UHD电影\n'
-                                                           '/downloads/remux#REMUX|Blu-?Ray#REMUX电影\n'
-                                                           '#1080p#高清电影',
-                                            'rows': 8,
-                                            'hint': '电影分类规则，每行一条',
-                                            'persistent-hint': True
-                                        }
-                                    }
-                                ]
-                            },
-                            {
-                                'component': 'VCol',
-                                'props': {
-                                    'cols': 12,
-                                    'md': 6
+                                    'cols': 12
                                 },
                                 'content': [
                                     {
@@ -210,10 +219,8 @@ class FileNameCategory(_PluginBase):
                                         'props': {
                                             'model': 'tv_rules',
                                             'label': '电视剧分类规则',
-                                            'placeholder': '/downloads/uhd#UHD|4K|2160p#UHD剧集\n'
-                                                           '/downloads/remux#REMUX|Blu-?Ray#REMUX剧集\n'
-                                                           '#1080p#高清剧集',
-                                            'rows': 8,
+                                            'placeholder': '/library/tvshows/uhd#UHD|4K|2160p#UHD剧集\n#REMUX|Blu-?Ray#REMUX剧集\n#1080p#高清剧集',
+                                            'rows': 6,
                                             'hint': '电视剧分类规则，每行一条',
                                             'persistent-hint': True
                                         }
@@ -235,12 +242,22 @@ class FileNameCategory(_PluginBase):
                                         'component': 'VAlert',
                                         'props': {
                                             'type': 'warning',
-                                            'variant': 'tonal',
-                                            'text': '规则示例:\n'
-                                                    '- /downloads/uhd#UHD|4K|2160p#UHD电影  (路径包含/downloads/uhd且文件名包含UHD、4K或2160p时，分类为UHD电影)\n'
-                                                    '- #REMUX#REMUX电影  (任意路径，文件名包含REMUX时，分类为REMUX电影)\n'
-                                                    '- /nas/movie#CAT|BHYS#字幕组/精选  (路径包含/nas/movie且文件名包含CAT或BHYS时，分类为字幕组/精选)'
-                                        }
+                                            'variant': 'tonal'
+                                        },
+                                        'content': [
+                                            {
+                                                'component': 'div',
+                                                'html': '''<b>规则示例:</b>
+                                                <ul style="margin: 8px 0; padding-left: 20px;">
+                                                    <li><code>/library/uhd#UHD|4K|2160p#UHD电影</code><br>
+                                                        <span style="color: #888;">目标路径包含 /library/uhd 且文件名包含 UHD、4K 或 2160p 时，分类为 UHD电影</span></li>
+                                                    <li><code>#REMUX#REMUX电影</code><br>
+                                                        <span style="color: #888;">任意路径，文件名包含 REMUX 时，分类为 REMUX电影</span></li>
+                                                    <li><code>#CAT|BHYS#字幕组/精选</code><br>
+                                                        <span style="color: #888;">任意路径，文件名包含 CAT 或 BHYS 时，分类为 字幕组/精选（多级分类）</span></li>
+                                                </ul>'''
+                                            }
+                                        ]
                                     }
                                 ]
                             }
@@ -324,13 +341,10 @@ class FileNameCategory(_PluginBase):
                 logger.debug(f"文件名分类：无法获取原始文件名，跳过处理")
                 return
 
-            # 获取源文件路径（用于路径匹配）
-            source_path = ""
-            meta = rename_dict.get("__meta__")
-            if meta and hasattr(meta, 'path') and meta.path:
-                source_path = str(meta.path)
-            elif hasattr(data, 'path') and data.path:
-                source_path = str(data.path)
+            # 获取目标路径（用于路径匹配）
+            target_path = ""
+            if hasattr(data, 'path') and data.path:
+                target_path = str(data.path)
 
             # 获取媒体类型并选择对应的规则
             rules = []
@@ -349,7 +363,7 @@ class FileNameCategory(_PluginBase):
                 logger.debug(f"文件名分类：没有配置{media_type}规则，跳过处理")
                 return
 
-            logger.debug(f"文件名分类：开始匹配文件名 '{original_name}'，源路径 '{source_path}'，媒体类型 '{media_type}'，共 {len(rules)} 条规则")
+            logger.debug(f"文件名分类：开始匹配文件名 '{original_name}'，目标路径 '{target_path}'，媒体类型 '{media_type}'，共 {len(rules)} 条规则")
 
             # 获取当前分类
             current_category = media_info.category or ""
@@ -362,8 +376,8 @@ class FileNameCategory(_PluginBase):
                 category = rule.get("category", "")
 
                 # 检查路径过滤（包含匹配）
-                if rule_path and rule_path not in source_path:
-                    logger.debug(f"文件名分类：规则 '{pattern}' 路径不匹配（规则路径: {rule_path}, 源路径: {source_path}）")
+                if rule_path and rule_path not in target_path:
+                    logger.debug(f"文件名分类：规则 '{pattern}' 路径不匹配（规则路径: {rule_path}, 目标路径: {target_path}）")
                     continue
 
                 # 使用正则表达式匹配（不区分大小写）
