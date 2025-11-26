@@ -144,6 +144,7 @@ class FileNameCategory(_PluginBase):
                                         'props': {
                                             'type': 'info',
                                             'variant': 'tonal',
+                                            'style': 'white-space: pre-line',
                                             'text': '规则格式: 路径#关键字#分类\n'
                                                     '• 路径: 目标路径过滤，包含匹配，留空表示匹配所有路径\n'
                                                     '• 关键字: 支持正则表达式，不区分大小写，多个关键字用 | 分隔\n'
@@ -217,13 +218,14 @@ class FileNameCategory(_PluginBase):
                                         'props': {
                                             'type': 'warning',
                                             'variant': 'tonal',
+                                            'style': 'white-space: pre-line',
                                             'text': '规则示例:\n'
                                                     '• #HDHome#HDHome/原盘\n'
-                                                    '  → 文件名包含 HDHome 时，创建多级子分类: /HDHome/原盘/电影名\n'
+                                                    '   文件名包含 HDHome 时，创建多级子分类: /HDHome/原盘/电影名\n'
                                                     '• #CHD|CHDBits#CHDBits\n'
-                                                    '  → 文件名包含 CAT 或 BHYS 时，创建子分类: /CHDBits/电影名\n'
+                                                    '   文件名包含 CHD 或 CHDBits 时，创建子分类: /CHDBits/电影名\n'
                                                     '• /path/已整理#UHD|4K#4K\n'
-                                                    '  → 目标路径包含 /path/已整理 且文件名包含 UHD 或 4K 时，创建 4K 子分类'
+                                                    '   目标路径包含 /path/已整理 且文件名包含 UHD 或 4K 时，创建 4K 子分类'
                                         }
                                     }
                                 ]
