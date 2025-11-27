@@ -187,9 +187,9 @@ class FileNameCategory(_PluginBase):
                                             'variant': 'tonal',
                                             'style': 'white-space: pre-line; font-size: 13px',
                                             'text': '规则格式: 路径#关键字#分类\n'
-                                                    '• 路径: 目标路径过滤，包含匹配，留空表示匹配所有路径\n'
+                                                    '• 路径: 目标路径过滤，限定此条规则仅对该路径下的文件生效，可以使用正则表达式通配，留空表示匹配所有路径\n'
                                                     '• 关键字: 支持正则表达式，不区分大小写，多个关键字用 | 分隔；留空或 .* 表示匹配所有文件\n'
-                                                    '• 分类: 子分类名称，支持多级路径如 UHD/杜比视界，支持模板变量 {年代} {首字母}\n'
+                                                    f'• 分类: 子分类名称，支持多级路径如 UHD/杜比视界，支持模板变量 {年代} {首字母}\n'
                                                     '说明: 每行一条规则，按顺序匹配，第一个匹配的规则生效。匹配后会在原分类下创建子分类。'
                                         }
                                     }
@@ -211,7 +211,7 @@ class FileNameCategory(_PluginBase):
                                         'props': {
                                             'model': 'rules',
                                             'label': '分类规则',
-                                            'placeholder': '#HDHome#HDHome\n#CHD|CHDBits#CHDBits\n/电影##经典/{年代}\n##{首字母}',
+                                            'placeholder': '#HDHome#HDHome\n#CHD|CHDBits#CHDBits/ISO\n/downloads##/{年代}',
                                             'rows': 8,
                                             'hint': '分类规则，每行一条，适用于电影和电视剧',
                                             'persistent-hint': True
@@ -239,12 +239,10 @@ class FileNameCategory(_PluginBase):
                                             'text': '规则示例:\n'
                                                     '• #CHD|CHDBits#CHDBits/原盘\n'
                                                     '   文件名包含 CHD 或 CHDBits 时，创建子分类: CHDBits/原盘/\n'
-                                                    '• /电影##经典/{年代}\n'
-                                                    '   目标路径包含 /电影 的所有文件，按年代分类: 经典/1990s/\n'
-                                                    '• ##{首字母}\n'
-                                                    '   所有文件按首字母分类: 黑客帝国 -> H/, Avatar -> A/, 12猴子 -> 0-9/\n'
-                                                    '• /path/已整理#UHD|4K#4K\n'
-                                                    '   目标路径包含 /path/已整理 且文件名包含 UHD 或 4K 时，创建 4K 子分类'
+                                                    '• /downloads##/{年代}\n'
+                                                    '   目标路径包含 /downloads 的所有文件，按年代分类: /1990s/，/2000s/，/2010s/，/2020s/\n'
+                                                    '• /我的接收#UHD|4K#4K/{首字母}\n'
+                                                    '   目标路径包含 /我的接收 且文件名包含 UHD 或 4K 时，创建 4K 子分类，并按照首字母分类: 4K/A/, 4K/B/, 4K/C/, ...'
                                         }
                                     }
                                 ]
