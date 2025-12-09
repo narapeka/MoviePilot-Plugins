@@ -235,8 +235,8 @@ class DeviceCheck(_PluginBase):
                                         'props': {
                                             'model': 'devices',
                                             'label': '设备列表',
-                                            'placeholder': '播放器#192.168.1.88#\nNAS#192.168.1.89#445',
-                                            'rows': 8,
+                                            'placeholder': '蓝光机#192.168.1.88#\n芝杜SMB服务#192.168.1.89#445\nNFS服务器#192.168.1.90#2049',
+                                            'rows': 5,
                                             'hint': '格式：设备名称#IP地址#端口（端口可选，留空则使用Ping检测）。每行一个设备。',
                                             'persistent-hint': True
                                         }
@@ -451,7 +451,8 @@ class DeviceCheck(_PluginBase):
                 event_data
             )
             
-            logger.debug(f"已发送设备状态事件: {device_name} ({device_ip}) -> {status}")
+            logger.info(f"已发送设备状态事件: {device_name} ({device_ip}) -> {status}")
+            logger.info(f"事件数据: {event_data}")
             
         except Exception as e:
             logger.error(f"发送设备状态事件失败: {str(e)}")
