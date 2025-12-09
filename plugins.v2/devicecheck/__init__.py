@@ -188,7 +188,7 @@ class DeviceCheck(_PluginBase):
                                             'model': 'check_interval',
                                             'label': '检测间隔（秒）',
                                             'type': 'number',
-                                            'placeholder': '60'
+                                            'placeholder': '30'
                                         }
                                     }
                                 ]
@@ -207,28 +207,6 @@ class DeviceCheck(_PluginBase):
                                             'label': '超时时间（秒）',
                                             'type': 'number',
                                             'placeholder': '3'
-                                        }
-                                    }
-                                ]
-                            }
-                        ]
-                    },
-                    {
-                        'component': 'VRow',
-                        'content': [
-                            {
-                                'component': 'VCol',
-                                'props': {
-                                    'cols': 12
-                                },
-                                'content': [
-                                    {
-                                        'component': 'VAlert',
-                                        'props': {
-                                            'type': 'info',
-                                            'variant': 'text',
-                                            'density': 'compact',
-                                            'text': '💡 常用端口提示：SMB (445) | NFS (2049) | CD2 (19798) | 留空则使用Ping检测'
                                         }
                                     }
                                 ]
@@ -276,9 +254,10 @@ class DeviceCheck(_PluginBase):
                                             'style': 'white-space: pre-line; font-size: 13px',
                                             'text': '配置示例:\n'
                                                     '• 播放器#192.168.1.88#\n'
-                                                    '   设备名称：播放器，IP：192.168.1.88，使用Ping检测\n'
+                                                    '   设备名称：播放器，IP：192.168.1.88，端口留空，使用Ping检测\n'
                                                     '• NAS#192.168.1.89#445\n'
-                                                    '   设备名称：NAS，IP：192.168.1.89，端口：445（SMB），使用端口检测'
+                                                    '   设备名称：NAS，IP：192.168.1.89，端口：445（SMB），使用端口检测\n\n'
+                                                    '常用端口提示：SMB (445) | NFS (2049) | CD2 (19798) | 留空则使用Ping检测'
                                         }
                                     }
                                 ]
@@ -304,43 +283,11 @@ class DeviceCheck(_PluginBase):
                                         'props': {
                                             'type': 'info',
                                             'variant': 'tonal',
-                                            'title': '如何接收设备状态事件'
-                                        },
-                                        'content': [
-                                            {
-                                                'component': 'div',
-                                                'props': {
-                                                    'style': {
-                                                        'margin-top': '8px',
-                                                        'line-height': '1.8',
-                                                        'font-size': '13px'
-                                                    }
-                                                },
-                                                'content': [
-                                                    {
-                                                        'component': 'p',
-                                                        'props': {
-                                                            'style': {
-                                                                'margin': '0 0 8px 0',
-                                                                'font-weight': '500'
-                                                            }
-                                                        },
-                                                        'text': '其他插件可以通过监听 PluginTriggered 事件来接收设备状态变化通知：'
-                                                    },
-                                                    {
-                                                        'component': 'p',
-                                                        'props': {
-                                                            'style': {
-                                                                'margin': '8px 0 0 0',
-                                                                'font-size': '12px',
-                                                                'color': 'rgba(0,0,0,0.7)'
-                                                            }
-                                                        },
-                                                        'text': '事件数据字段：device_name（设备名称）、device_ip（IP地址）、device_port（端口，可选）、status（online/offline）、timestamp（时间戳）。检测方式：有端口时使用端口检测，无端口时使用ping检测。'
-                                                    }
-                                                ]
-                                            }
-                                        ]
+                                            'style': 'white-space: pre-line; font-size: 13px',
+                                            'text': '如何接收设备状态事件:\n'
+                                                    '其他插件可以通过监听 PluginTriggered 事件来接收设备状态变化通知。\n\n'
+                                                    '事件数据字段：device_name（设备名称）、device_ip（IP地址）、device_port（端口）、status（online/offline）、timestamp（时间戳）。\n'
+                                        }
                                     }
                                 ]
                             }
