@@ -47,6 +47,46 @@ class DeviceCheck(_PluginBase):
     # 设备状态缓存
     _device_status = {}  # {device_key: {"status": "online/offline", "last_check": timestamp}}
 
+    def _parse_devices(self, devices_text: str) -> List[Dict[str, Any]]:
+        """
+        解析文本格式的设备配置
+        格式: name#ip#port (每行一条，port可选)
+        """
+        devices = []
+        if not devices_text:
+            return devices
+        
+        for line in devices_text.strip().split('\n'):
+            line = line.strip()
+            if not line or line.startswith('#'):
+                # 跳过空行和注释行
+                continue
+            
+            parts = line.split('#')
+            if len(parts) >= 2:
+                # name#ip#port 或 name#ip
+                name = parts[0].strip()
+                ip = parts[1].strip()
+                port = parts[2].strip() if len(parts) > 2 else None
+                
+                if name and ip:
+                    device = {
+                        "name": name,
+                        "ip": ip
+                    }
+                    if port:
+                        try:
+                            device["port"] = int(port)
+                        except (ValueError, TypeError):
+                            logger.warning(f"设备配置：端口格式错误，忽略端口 '{port}'")
+                    devices.append(device)
+                else:
+                    logger.warning(f"设备配置：跳过无效行（名称或IP为空）: {line}")
+            else:
+                logger.warning(f"设备配置：跳过格式错误的行: {line}")
+        
+        return devices
+    
     def init_plugin(self, config: dict = None):
         """
         初始化插件
@@ -55,12 +95,12 @@ class DeviceCheck(_PluginBase):
         
         if config:
             self._enabled = config.get("enabled", False)
-            self._devices = config.get("devices", [])
+            devices_text = config.get("devices", "")
             self._check_interval = config.get("check_interval", 60)
             self._timeout = config.get("timeout", 3)
             
-            # 验证设备配置
-            self._devices = [d for d in self._devices if d.get("name") and d.get("ip")]
+            # 解析设备配置文本
+            self._devices = self._parse_devices(devices_text)
             
             if self._enabled and self._devices:
                 # 启动监控线程
@@ -101,303 +141,216 @@ class DeviceCheck(_PluginBase):
         """
         # 获取当前配置
         current_config = self.get_config() or {}
-        devices = current_config.get("devices", [])
+        devices_text = current_config.get("devices", "")
         
-        # 构建表单内容
-        form_content = [
-            {
-                'component': 'VRow',
-                'content': [
-                    {
-                        'component': 'VCol',
-                        'props': {
-                            'cols': 12,
-                            'md': 6
-                        },
-                        'content': [
-                            {
-                                'component': 'VSwitch',
-                                'props': {
-                                    'model': 'enabled',
-                                    'label': '启用插件',
-                                }
-                            }
-                        ]
-                    }
-                ]
-            },
-            {
-                'component': 'VRow',
-                'content': [
-                    {
-                        'component': 'VCol',
-                        'props': {
-                            'cols': 12,
-                            'md': 6
-                        },
-                        'content': [
-                            {
-                                'component': 'VTextField',
-                                'props': {
-                                    'model': 'check_interval',
-                                    'label': '检测间隔（秒）',
-                                    'type': 'number',
-                                    'placeholder': '60'
-                                }
-                            }
-                        ]
-                    },
-                    {
-                        'component': 'VCol',
-                        'props': {
-                            'cols': 12,
-                            'md': 6
-                        },
-                        'content': [
-                            {
-                                'component': 'VTextField',
-                                'props': {
-                                    'model': 'timeout',
-                                    'label': '超时时间（秒）',
-                                    'type': 'number',
-                                    'placeholder': '3'
-                                }
-                            }
-                        ]
-                    }
-                ]
-            },
-            {
-                'component': 'VRow',
-                'content': [
-                    {
-                        'component': 'VCol',
-                        'props': {
-                            'cols': 12
-                        },
-                        'content': [
-                            {
-                                'component': 'VAlert',
-                                'props': {
-                                    'type': 'info',
-                                    'variant': 'text',
-                                    'density': 'compact',
-                                    'text': '💡 常用端口提示：SMB (445) | NFS (2049) | CD2 (19798) | 留空则使用Ping检测'
-                                }
-                            }
-                        ]
-                    }
-                ]
-            },
-            {
-                'component': 'VRow',
-                'content': [
-                    {
-                        'component': 'VCol',
-                        'props': {
-                            'cols': 12
-                        },
-                        'content': [
-                            {
-                                'component': 'VAlert',
-                                'props': {
-                                    'type': 'info',
-                                    'variant': 'text',
-                                    'density': 'compact',
-                                    'text': '设备列表：每个设备需要填写名称和IP地址，端口为可选（留空则使用Ping检测）'
-                                }
-                            }
-                        ]
-                    }
-                ]
-            }
-        ]
-        
-        # 为每个设备动态生成一行
-        for idx, device in enumerate(devices):
-            device_name = device.get('name', '')
-            device_ip = device.get('ip', '')
-            device_port = device.get('port', '')
-            
-            form_content.append({
-                'component': 'VRow',
-                'content': [
-                    {
-                        'component': 'VCol',
-                        'props': {
-                            'cols': 12,
-                            'md': 3
-                        },
-                        'content': [
-                            {
-                                'component': 'VTextField',
-                                'props': {
-                                    'model': f'devices.{idx}.name',
-                                    'label': '设备名称',
-                                    'density': 'compact',
-                                    'hide-details': 'auto'
-                                }
-                            }
-                        ]
-                    },
-                    {
-                        'component': 'VCol',
-                        'props': {
-                            'cols': 12,
-                            'md': 4
-                        },
-                        'content': [
-                            {
-                                'component': 'VTextField',
-                                'props': {
-                                    'model': f'devices.{idx}.ip',
-                                    'label': 'IP地址',
-                                    'density': 'compact',
-                                    'hide-details': 'auto'
-                                }
-                            }
-                        ]
-                    },
-                    {
-                        'component': 'VCol',
-                        'props': {
-                            'cols': 12,
-                            'md': 3
-                        },
-                        'content': [
-                            {
-                                'component': 'VTextField',
-                                'props': {
-                                    'model': f'devices.{idx}.port',
-                                    'label': '端口（可选）',
-                                    'type': 'number',
-                                    'density': 'compact',
-                                    'hide-details': 'auto'
-                                }
-                            }
-                        ]
-                    },
-                    {
-                        'component': 'VCol',
-                        'props': {
-                            'cols': 12,
-                            'md': 2
-                        },
-                        'content': [
-                            {
-                                'component': 'VBtn',
-                                'props': {
-                                    'color': 'error',
-                                    'icon': 'mdi-delete',
-                                    'variant': 'text',
-                                    'density': 'compact'
-                                },
-                                'events': {
-                                    'click': f'removeDevice({idx})'
-                                }
-                            }
-                        ]
-                    }
-                ]
-            })
-        
-        # 添加"添加设备"按钮
-        form_content.append({
-            'component': 'VRow',
-            'content': [
-                {
-                    'component': 'VCol',
-                    'props': {
-                        'cols': 12
-                    },
-                    'content': [
-                        {
-                            'component': 'VBtn',
-                            'props': {
-                                'color': 'primary',
-                                'prepend-icon': 'mdi-plus',
-                                'text': '添加设备'
-                            },
-                            'events': {
-                                'click': 'addDevice'
-                            }
-                        }
-                    ]
-                }
-            ]
-        })
-        
-        # 添加事件接收说明
-        form_content.append({
-            'component': 'VRow',
-            'props': {
-                'style': {
-                    'margin-top': '12px'
-                },
-            },
-            'content': [
-                {
-                    'component': 'VCol',
-                    'props': {
-                        'cols': 12
-                    },
-                    'content': [
-                        {
-                            'component': 'VAlert',
-                            'props': {
-                                'type': 'info',
-                                'variant': 'tonal',
-                                'title': '如何接收设备状态事件'
-                            },
-                            'content': [
-                                {
-                                    'component': 'div',
-                                    'props': {
-                                        'style': {
-                                            'margin-top': '8px',
-                                            'line-height': '1.8',
-                                            'font-size': '13px'
-                                        }
-                                    },
-                                    'content': [
-                                        {
-                                            'component': 'p',
-                                            'props': {
-                                                'style': {
-                                                    'margin': '0 0 8px 0',
-                                                    'font-weight': '500'
-                                                }
-                                            },
-                                            'text': '其他插件可以通过监听 PluginTriggered 事件来接收设备状态变化通知：'
-                                        },
-                                        {
-                                            'component': 'p',
-                                            'props': {
-                                                'style': {
-                                                    'margin': '8px 0 0 0',
-                                                    'font-size': '12px',
-                                                    'color': 'rgba(0,0,0,0.7)'
-                                                }
-                                            },
-                                            'text': '事件数据字段：device_name（设备名称）、device_ip（IP地址）、device_port（端口，可选）、status（online/offline）、timestamp（时间戳）。检测方式：有端口时使用端口检测，无端口时使用ping检测。'
-                                        }
-                                    ]
-                                }
-                            ]
-                        }
-                    ]
-                }
-            ]
-        })
+        # 确保是字符串格式
+        if not isinstance(devices_text, str):
+            devices_text = ""
         
         return [
             {
                 'component': 'VForm',
-                'content': form_content
+                'content': [
+                    {
+                        'component': 'VRow',
+                        'content': [
+                            {
+                                'component': 'VCol',
+                                'props': {
+                                    'cols': 12,
+                                    'md': 6
+                                },
+                                'content': [
+                                    {
+                                        'component': 'VSwitch',
+                                        'props': {
+                                            'model': 'enabled',
+                                            'label': '启用插件',
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        'component': 'VRow',
+                        'content': [
+                            {
+                                'component': 'VCol',
+                                'props': {
+                                    'cols': 12,
+                                    'md': 6
+                                },
+                                'content': [
+                                    {
+                                        'component': 'VTextField',
+                                        'props': {
+                                            'model': 'check_interval',
+                                            'label': '检测间隔（秒）',
+                                            'type': 'number',
+                                            'placeholder': '60'
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                'component': 'VCol',
+                                'props': {
+                                    'cols': 12,
+                                    'md': 6
+                                },
+                                'content': [
+                                    {
+                                        'component': 'VTextField',
+                                        'props': {
+                                            'model': 'timeout',
+                                            'label': '超时时间（秒）',
+                                            'type': 'number',
+                                            'placeholder': '3'
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        'component': 'VRow',
+                        'content': [
+                            {
+                                'component': 'VCol',
+                                'props': {
+                                    'cols': 12
+                                },
+                                'content': [
+                                    {
+                                        'component': 'VAlert',
+                                        'props': {
+                                            'type': 'info',
+                                            'variant': 'text',
+                                            'density': 'compact',
+                                            'text': '💡 常用端口提示：SMB (445) | NFS (2049) | CD2 (19798) | 留空则使用Ping检测'
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        'component': 'VRow',
+                        'content': [
+                            {
+                                'component': 'VCol',
+                                'props': {
+                                    'cols': 12
+                                },
+                                'content': [
+                                    {
+                                        'component': 'VTextarea',
+                                        'props': {
+                                            'model': 'devices',
+                                            'label': '设备列表',
+                                            'placeholder': '播放器#192.168.1.88#\nNAS#192.168.1.89#445',
+                                            'rows': 8,
+                                            'hint': '格式：设备名称#IP地址#端口（端口可选，留空则使用Ping检测）。每行一个设备。',
+                                            'persistent-hint': True
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        'component': 'VRow',
+                        'content': [
+                            {
+                                'component': 'VCol',
+                                'props': {
+                                    'cols': 12,
+                                },
+                                'content': [
+                                    {
+                                        'component': 'VAlert',
+                                        'props': {
+                                            'type': 'info',
+                                            'variant': 'tonal',
+                                            'style': 'white-space: pre-line; font-size: 13px',
+                                            'text': '配置示例:\n'
+                                                    '• 播放器#192.168.1.88#\n'
+                                                    '   设备名称：播放器，IP：192.168.1.88，使用Ping检测\n'
+                                                    '• NAS#192.168.1.89#445\n'
+                                                    '   设备名称：NAS，IP：192.168.1.89，端口：445（SMB），使用端口检测'
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        'component': 'VRow',
+                        'props': {
+                            'style': {
+                                'margin-top': '12px'
+                            },
+                        },
+                        'content': [
+                            {
+                                'component': 'VCol',
+                                'props': {
+                                    'cols': 12
+                                },
+                                'content': [
+                                    {
+                                        'component': 'VAlert',
+                                        'props': {
+                                            'type': 'info',
+                                            'variant': 'tonal',
+                                            'title': '如何接收设备状态事件'
+                                        },
+                                        'content': [
+                                            {
+                                                'component': 'div',
+                                                'props': {
+                                                    'style': {
+                                                        'margin-top': '8px',
+                                                        'line-height': '1.8',
+                                                        'font-size': '13px'
+                                                    }
+                                                },
+                                                'content': [
+                                                    {
+                                                        'component': 'p',
+                                                        'props': {
+                                                            'style': {
+                                                                'margin': '0 0 8px 0',
+                                                                'font-weight': '500'
+                                                            }
+                                                        },
+                                                        'text': '其他插件可以通过监听 PluginTriggered 事件来接收设备状态变化通知：'
+                                                    },
+                                                    {
+                                                        'component': 'p',
+                                                        'props': {
+                                                            'style': {
+                                                                'margin': '8px 0 0 0',
+                                                                'font-size': '12px',
+                                                                'color': 'rgba(0,0,0,0.7)'
+                                                            }
+                                                        },
+                                                        'text': '事件数据字段：device_name（设备名称）、device_ip（IP地址）、device_port（端口，可选）、status（online/offline）、timestamp（时间戳）。检测方式：有端口时使用端口检测，无端口时使用ping检测。'
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
             }
         ], {
             "enabled": current_config.get("enabled", False),
-            "devices": devices,
+            "devices": devices_text,
             "check_interval": current_config.get("check_interval", 60),
             "timeout": current_config.get("timeout", 3)
         }
