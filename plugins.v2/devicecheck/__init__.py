@@ -5,6 +5,7 @@
 import threading
 import subprocess
 import socket
+from datetime import datetime
 from time import sleep, time
 from typing import Any, Dict, List, Tuple, Optional
 
@@ -99,6 +100,9 @@ class DeviceCheck(_PluginBase):
         """
         拼装插件配置页面
         """
+        # 获取当前配置
+        current_config = self.get_config() or {}
+        
         return [
             {
                 'component': 'VForm',
@@ -140,7 +144,7 @@ class DeviceCheck(_PluginBase):
                                             'model': 'check_interval',
                                             'label': '检测间隔（秒）',
                                             'type': 'number',
-                                            'placeholder': '30'
+                                            'placeholder': '60'
                                         }
                                     }
                                 ]
@@ -201,13 +205,11 @@ class DeviceCheck(_PluginBase):
                                         'props': {
                                             'model': 'devices',
                                             'headers': [
-                                                {'title': '设备名称', 'key': 'name', 'editable': True},
-                                                {'title': 'IP地址', 'key': 'ip', 'editable': True},
-                                                {'title': '端口', 'key': 'port', 'editable': True}
+                                                {'title': '设备名称', 'key': 'name', 'sortable': False},
+                                                {'title': 'IP地址', 'key': 'ip', 'sortable': False},
+                                                {'title': '端口', 'key': 'port', 'sortable': False}
                                             ],
-                                            'items': 'devices',
-                                            'hide-default-footer': True,
-                                            'editable': True
+                                            'hide-default-footer': True
                                         }
                                     }
                                 ]
@@ -317,33 +319,82 @@ class DeviceCheck(_PluginBase):
                 ]
             }
         ], {
-            "enabled": False,
-            "devices": [],
-            "check_interval": 60,
-            "timeout": 3
+            "enabled": current_config.get("enabled", False),
+            "devices": current_config.get("devices", []),
+            "check_interval": current_config.get("check_interval", 60),
+            "timeout": current_config.get("timeout", 3)
         }
 
     def get_page(self) -> List[dict]:
         """
         获取插件数据页面
         """
-        # 显示设备状态
+        # 准备设备状态数据
         status_data = []
         for device in self._devices:
             device_key = f"{device.get('ip')}:{device.get('port', '')}"
             status_info = self._device_status.get(device_key, {})
             device_port = device.get("port")
             check_method = "端口检测" if device_port else "Ping检测"
+            last_check = status_info.get("last_check", 0)
+            
+            # 格式化最后检测时间
+            if last_check > 0:
+                try:
+                    last_check_str = datetime.fromtimestamp(last_check).strftime("%Y-%m-%d %H:%M:%S")
+                except:
+                    last_check_str = "未知"
+            else:
+                last_check_str = "未检测"
+            
+            # 格式化状态显示
+            status = status_info.get("status", "unknown")
+            status_display = {
+                "online": "在线",
+                "offline": "离线",
+                "unknown": "未知"
+            }.get(status, "未知")
+            
             status_data.append({
-                "name": device.get("name"),
-                "ip": device.get("ip"),
+                "name": device.get("name", "未知设备"),
+                "ip": device.get("ip", ""),
                 "port": device_port if device_port else "-",
                 "check_method": check_method,
-                "status": status_info.get("status", "unknown"),
-                "last_check": status_info.get("last_check", 0)
+                "status": status_display,
+                "last_check": last_check_str
             })
         
-        return status_data
+        # 返回UI结构
+        return [
+            {
+                'component': 'VRow',
+                'content': [
+                    {
+                        'component': 'VCol',
+                        'props': {
+                            'cols': 12
+                        },
+                        'content': [
+                            {
+                                'component': 'VDataTable',
+                                'props': {
+                                    'headers': [
+                                        {'title': '设备名称', 'key': 'name', 'sortable': True},
+                                        {'title': 'IP地址', 'key': 'ip', 'sortable': True},
+                                        {'title': '端口', 'key': 'port', 'sortable': True},
+                                        {'title': '检测方式', 'key': 'check_method', 'sortable': True},
+                                        {'title': '状态', 'key': 'status', 'sortable': True},
+                                        {'title': '最后检测时间', 'key': 'last_check', 'sortable': True}
+                                    ],
+                                    'items': status_data,
+                                    'hide-default-footer': False
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
 
     def _monitor_devices(self):
         """
