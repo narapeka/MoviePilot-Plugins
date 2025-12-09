@@ -295,7 +295,7 @@ class DeviceCheck(_PluginBase):
                                                                 'word-wrap': 'break-word'
                                                             }
                                                         },
-                                                        'text': '@eventmanager.register(EventType.PluginTriggered)\ndef handle_device_event(self, event: Event):\n    event_data = event.event_data\n    if event_data.get("plugin_id") == "DeviceCheck":\n        event_name = event_data.get("event_name")\n        device_ip = event_data.get("device_ip")\n        device_name = event_data.get("device_name")\n        \n        if event_name == "device_online":\n            # 设备上线处理\n            logger.info(f"设备 {device_name} ({device_ip}) 已上线")\n        elif event_name == "device_offline":\n            # 设备下线处理\n            logger.info(f"设备 {device_name} ({device_ip}) 已下线")'
+                                                        'text': ''
                                                     },
                                                     {
                                                         'component': 'p',
