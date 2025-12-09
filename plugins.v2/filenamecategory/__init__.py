@@ -19,11 +19,11 @@ class FileNameCategory(_PluginBase):
     # 插件作者
     plugin_author = "narapeka"
     # 作者主页
-    author_url = ""
+    author_url = "https://github.com/narapeka/MoviePilot-Plugins"
     # 插件配置项ID前缀
     plugin_config_prefix = "filenamecategory_"
     # 加载顺序
-    plugin_order = 1
+    plugin_order = 10
     # 可使用的用户级别
     auth_level = 1
 

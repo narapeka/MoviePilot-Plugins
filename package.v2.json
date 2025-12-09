@@ -10,5 +10,17 @@
     "history": {
       "v1.0": "根据原始文件名中的关键字（支持正则表达式）来自定义媒体分类"
     }
+  },
+  "DeviceCheck": {
+    "name": "设备状态检测",
+    "description": "检测设备在线状态，当设备上线或下线时发送事件通知给其他插件",
+    "labels": "工具,事件",
+    "version": "1.0",
+    "icon": "Syncthing.png",
+    "author": "narapeka",
+    "level": 1,
+    "history": {
+      "v1.0": "设备状态检测插件，支持ping和端口检测，发送PluginTriggered事件"
+    }
   }
 }
