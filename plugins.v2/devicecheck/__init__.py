@@ -37,7 +37,7 @@ class DeviceCheck(_PluginBase):
     # 私有属性
     _enabled = False
     _devices = []  # 设备列表: [{"name": "设备名", "ip": "IP地址", "port": 端口（可选）}]
-    _check_interval = 60  # 检测间隔（秒）
+    _check_interval = 30  # 检测间隔（秒）
     _timeout = 3  # 超时时间（秒）
     
     # 监控线程
@@ -67,18 +67,19 @@ class DeviceCheck(_PluginBase):
                 # name#ip#port 或 name#ip
                 name = parts[0].strip()
                 ip = parts[1].strip()
-                port = parts[2].strip() if len(parts) > 2 else None
+                port_str = parts[2].strip() if len(parts) > 2 else None
                 
                 if name and ip:
                     device = {
                         "name": name,
                         "ip": ip
                     }
-                    if port:
+                    # 只有当端口字符串非空时才解析端口
+                    if port_str:
                         try:
-                            device["port"] = int(port)
+                            device["port"] = int(port_str)
                         except (ValueError, TypeError):
-                            logger.warning(f"设备配置：端口格式错误，忽略端口 '{port}'")
+                            logger.warning(f"设备配置：端口格式错误，忽略端口 '{port_str}'")
                     devices.append(device)
                 else:
                     logger.warning(f"设备配置：跳过无效行（名称或IP为空）: {line}")
@@ -96,8 +97,15 @@ class DeviceCheck(_PluginBase):
         if config:
             self._enabled = config.get("enabled", False)
             devices_text = config.get("devices", "")
-            self._check_interval = config.get("check_interval", 60)
-            self._timeout = config.get("timeout", 3)
+            # 确保 check_interval 和 timeout 是整数
+            try:
+                self._check_interval = int(config.get("check_interval", 30))
+            except (ValueError, TypeError):
+                self._check_interval = 30
+            try:
+                self._timeout = int(config.get("timeout", 3))
+            except (ValueError, TypeError):
+                self._timeout = 3
             
             # 解析设备配置文本
             self._devices = self._parse_devices(devices_text)
@@ -252,7 +260,7 @@ class DeviceCheck(_PluginBase):
                                             'type': 'info',
                                             'variant': 'tonal',
                                             'style': 'white-space: pre-line; font-size: 13px',
-                                            'text': '配置示例:\n'
+                                            'text': '配置示例:\n\n'
                                                     '• 播放器#192.168.1.88#\n'
                                                     '   设备名称：播放器，IP：192.168.1.88，端口留空，使用Ping检测\n'
                                                     '• NAS#192.168.1.89#445\n'
@@ -284,9 +292,9 @@ class DeviceCheck(_PluginBase):
                                             'type': 'info',
                                             'variant': 'tonal',
                                             'style': 'white-space: pre-line; font-size: 13px',
-                                            'text': '如何接收设备状态事件:\n'
-                                                    '其他插件可以通过监听 PluginTriggered 事件来接收设备状态变化通知。\n\n'
-                                                    '事件数据字段：device_name（设备名称）、device_ip（IP地址）、device_port（端口）、status（online/offline）、timestamp（时间戳）。\n'
+                                            'text': '如何接收设备状态事件:\n\n'
+                                                    '其他插件可以通过监听 PluginTriggered 事件来接收设备状态变化通知。\n'
+                                                    '事件字段：device_name（设备名）、device_ip（IP地址）、device_port（端口）、status（online/offline）、timestamp（时间戳）。\n'
                                         }
                                     }
                                 ]
@@ -298,7 +306,7 @@ class DeviceCheck(_PluginBase):
         ], {
             "enabled": current_config.get("enabled", False),
             "devices": devices_text,
-            "check_interval": current_config.get("check_interval", 60),
+            "check_interval": current_config.get("check_interval", 30),
             "timeout": current_config.get("timeout", 3)
         }
 
@@ -328,9 +336,11 @@ class DeviceCheck(_PluginBase):
                     
                     # 检测设备状态：有端口时使用端口检测，无端口时使用ping检测
                     is_online = False
-                    if device_port:
+                    if device_port is not None:
                         try:
-                            is_online = self._check_port(device_ip, int(device_port))
+                            # 确保端口是整数
+                            port_int = int(device_port) if not isinstance(device_port, int) else device_port
+                            is_online = self._check_port(device_ip, port_int)
                         except (ValueError, TypeError):
                             # 端口格式错误，回退到ping检测
                             is_online = self._check_ping(device_ip)
