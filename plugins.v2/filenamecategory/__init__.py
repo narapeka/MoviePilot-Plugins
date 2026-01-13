@@ -34,12 +34,7 @@ class FileNameCategory(_PluginBase):
         if config:
             self._enabled = config.get("enabled", False)
             # 解析分类规则
-            rules_text = config.get("rules", "")
-            logger.debug(f"文件名分类：加载配置，enabled={self._enabled}, rules长度={len(rules_text) if rules_text else 0}")
-            self._rules = self._parse_rules(rules_text)
-            logger.debug(f"文件名分类：解析后规则数量={len(self._rules)}")
-            if self._rules:
-                logger.debug(f"文件名分类：规则示例={self._rules[0]}")
+            self._rules = self._parse_rules(config.get("rules", ""))
 
     def _parse_rules(self, rules_text: str) -> List[Dict[str, str]]:
         """
@@ -48,65 +43,47 @@ class FileNameCategory(_PluginBase):
         """
         rules = []
         if not rules_text:
-            logger.debug(f"文件名分类：规则文本为空")
             return rules
         
-        logger.debug(f"文件名分类：开始解析规则，文本内容: {repr(rules_text)}")
-        lines = rules_text.strip().split('\n')
-        logger.debug(f"文件名分类：分割后行数: {len(lines)}")
-        
-        for idx, line in enumerate(lines):
-            original_line = line
+        for line in rules_text.strip().split('\n'):
             line = line.strip()
-            logger.debug(f"文件名分类：处理第{idx+1}行: {repr(line)}")
-            
             if not line:
-                logger.debug(f"文件名分类：跳过空行")
-                continue
-            if line.startswith('#'):
-                logger.debug(f"文件名分类：跳过注释行: {line}")
+                # 跳过空行
                 continue
             
             parts = line.split('#')
-            logger.debug(f"文件名分类：分割后部分数: {len(parts)}, 内容: {parts}")
             
             if len(parts) >= 3:
                 # path#keyword#category (keyword可为空表示匹配所有)
+                # 如果以#开头，parts[0]会是空字符串，表示路径为空
                 path = parts[0].strip()
                 pattern = parts[1].strip()
                 category = parts[2].strip()
                 
-                logger.debug(f"文件名分类：解析结果 - path={repr(path)}, pattern={repr(pattern)}, category={repr(category)}")
-                
-                if category:  # pattern可为空（表示匹配所有）
+                if category:  # category必须存在
                     rules.append({
                         "path": path,
                         "pattern": pattern,
                         "category": category
                     })
-                    logger.debug(f"文件名分类：成功添加规则")
                 else:
                     logger.warning(f"文件名分类：跳过无效规则（category为空）: {line}")
             elif len(parts) == 2:
-                # keyword#category (无path限制)
+                # keyword#category (无path限制，path为空)
                 pattern = parts[0].strip()
                 category = parts[1].strip()
                 
-                logger.debug(f"文件名分类：解析结果（2部分） - pattern={repr(pattern)}, category={repr(category)}")
-                
-                if category:  # pattern可为空（表示匹配所有）
+                if category:  # category必须存在
                     rules.append({
                         "path": "",
                         "pattern": pattern,
                         "category": category
                     })
-                    logger.debug(f"文件名分类：成功添加规则")
                 else:
                     logger.warning(f"文件名分类：跳过无效规则（category为空）: {line}")
             else:
-                logger.warning(f"文件名分类：跳过格式错误的规则（部分数={len(parts)}）: {line}")
+                logger.warning(f"文件名分类：跳过格式错误的规则: {line}")
         
-        logger.debug(f"文件名分类：解析完成，共{len(rules)}条规则")
         return rules
 
     def _get_decade(self, year) -> str:
@@ -357,20 +334,7 @@ class FileNameCategory(_PluginBase):
 
             # 检查是否有规则
             if not self._rules:
-                logger.debug(f"文件名分类：没有配置规则，跳过处理（当前规则数量: {len(self._rules)}）")
-                # 尝试重新加载配置（可能配置已更新但插件未重新初始化）
-                current_config = self.get_config() or {}
-                rules_text = current_config.get("rules", "")
-                if rules_text:
-                    logger.debug(f"文件名分类：检测到配置中有规则文本（长度: {len(rules_text)}），重新解析...")
-                    self._rules = self._parse_rules(rules_text)
-                    logger.debug(f"文件名分类：重新解析后规则数量={len(self._rules)}")
-                    if not self._rules:
-                        logger.warning(f"文件名分类：规则文本存在但解析后为空，请检查规则格式")
-                        return
-                else:
-                    logger.debug(f"文件名分类：配置中也没有规则文本")
-                    return
+                return
 
             # 获取当前分类
             current_category = media_info.category or ""
