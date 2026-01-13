@@ -48,20 +48,35 @@ class FileNameCategory(_PluginBase):
         """
         rules = []
         if not rules_text:
+            logger.debug(f"文件名分类：规则文本为空")
             return rules
         
-        for line in rules_text.strip().split('\n'):
+        logger.debug(f"文件名分类：开始解析规则，文本内容: {repr(rules_text)}")
+        lines = rules_text.strip().split('\n')
+        logger.debug(f"文件名分类：分割后行数: {len(lines)}")
+        
+        for idx, line in enumerate(lines):
+            original_line = line
             line = line.strip()
-            if not line or line.startswith('#'):
-                # 跳过空行和注释行
+            logger.debug(f"文件名分类：处理第{idx+1}行: {repr(line)}")
+            
+            if not line:
+                logger.debug(f"文件名分类：跳过空行")
+                continue
+            if line.startswith('#'):
+                logger.debug(f"文件名分类：跳过注释行: {line}")
                 continue
             
             parts = line.split('#')
+            logger.debug(f"文件名分类：分割后部分数: {len(parts)}, 内容: {parts}")
+            
             if len(parts) >= 3:
                 # path#keyword#category (keyword可为空表示匹配所有)
                 path = parts[0].strip()
                 pattern = parts[1].strip()
                 category = parts[2].strip()
+                
+                logger.debug(f"文件名分类：解析结果 - path={repr(path)}, pattern={repr(pattern)}, category={repr(category)}")
                 
                 if category:  # pattern可为空（表示匹配所有）
                     rules.append({
@@ -69,6 +84,7 @@ class FileNameCategory(_PluginBase):
                         "pattern": pattern,
                         "category": category
                     })
+                    logger.debug(f"文件名分类：成功添加规则")
                 else:
                     logger.warning(f"文件名分类：跳过无效规则（category为空）: {line}")
             elif len(parts) == 2:
@@ -76,17 +92,21 @@ class FileNameCategory(_PluginBase):
                 pattern = parts[0].strip()
                 category = parts[1].strip()
                 
+                logger.debug(f"文件名分类：解析结果（2部分） - pattern={repr(pattern)}, category={repr(category)}")
+                
                 if category:  # pattern可为空（表示匹配所有）
                     rules.append({
                         "path": "",
                         "pattern": pattern,
                         "category": category
                     })
+                    logger.debug(f"文件名分类：成功添加规则")
                 else:
                     logger.warning(f"文件名分类：跳过无效规则（category为空）: {line}")
             else:
-                logger.warning(f"文件名分类：跳过格式错误的规则: {line}")
+                logger.warning(f"文件名分类：跳过格式错误的规则（部分数={len(parts)}）: {line}")
         
+        logger.debug(f"文件名分类：解析完成，共{len(rules)}条规则")
         return rules
 
     def _get_decade(self, year) -> str:
