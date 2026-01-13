@@ -34,7 +34,12 @@ class FileNameCategory(_PluginBase):
         if config:
             self._enabled = config.get("enabled", False)
             # 解析分类规则
-            self._rules = self._parse_rules(config.get("rules", ""))
+            rules_text = config.get("rules", "")
+            logger.debug(f"文件名分类：加载配置，enabled={self._enabled}, rules长度={len(rules_text) if rules_text else 0}")
+            self._rules = self._parse_rules(rules_text)
+            logger.debug(f"文件名分类：解析后规则数量={len(self._rules)}")
+            if self._rules:
+                logger.debug(f"文件名分类：规则示例={self._rules[0]}")
 
     def _parse_rules(self, rules_text: str) -> List[Dict[str, str]]:
         """
@@ -332,8 +337,20 @@ class FileNameCategory(_PluginBase):
 
             # 检查是否有规则
             if not self._rules:
-                logger.debug(f"文件名分类：没有配置规则，跳过处理")
-                return
+                logger.debug(f"文件名分类：没有配置规则，跳过处理（当前规则数量: {len(self._rules)}）")
+                # 尝试重新加载配置（可能配置已更新但插件未重新初始化）
+                current_config = self.get_config() or {}
+                rules_text = current_config.get("rules", "")
+                if rules_text:
+                    logger.debug(f"文件名分类：检测到配置中有规则文本（长度: {len(rules_text)}），重新解析...")
+                    self._rules = self._parse_rules(rules_text)
+                    logger.debug(f"文件名分类：重新解析后规则数量={len(self._rules)}")
+                    if not self._rules:
+                        logger.warning(f"文件名分类：规则文本存在但解析后为空，请检查规则格式")
+                        return
+                else:
+                    logger.debug(f"文件名分类：配置中也没有规则文本")
+                    return
 
             # 获取当前分类
             current_category = media_info.category or ""
