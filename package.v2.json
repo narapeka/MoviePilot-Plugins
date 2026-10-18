@@ -1,4 +1,18 @@
 {
+  "P115UrlCacheFix": {
+    "name": "115直链缓存修正",
+    "description": "为115网盘STRM助手限制直链缓存时长，或跳过缓存读取",
+    "labels": "115,缓存,播放",
+    "version": "1.0.0",
+    "icon": "https://raw.githubusercontent.com/narapeka/MoviePilot-Plugins/main/icons/P115UrlCacheFix.svg",
+    "author": "narapeka",
+    "level": 1,
+    "v3": false,
+    "system_version": ">=2.13.14",
+    "history": {
+      "v1.0.0": "运行时接管115网盘STRM助手的302缓存，默认限时缓存15分钟并遵守CDN到期时间；支持跳过缓存、目标重载后重新接管及停用恢复"
+    }
+  },
   "FileNameCategory": {
     "name": "文件名多级分类",
     "description": "根据原始文件名中的关键字（支持正则表达式）来自定义媒体分类。",
