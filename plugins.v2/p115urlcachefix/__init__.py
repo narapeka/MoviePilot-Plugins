@@ -18,7 +18,7 @@ class P115UrlCacheFix(_PluginBase):
     plugin_name = "115直链缓存修正"
     plugin_desc = "为115网盘STRM助手限制直链缓存时长，或跳过缓存读取"
     plugin_icon = "https://raw.githubusercontent.com/narapeka/MoviePilot-Plugins/main/icons/P115UrlCacheFix.svg"
-    plugin_version = "1.0.0"
+    plugin_version = "1.0.1"
     plugin_author = "narapeka"
     author_url = "https://github.com/narapeka/MoviePilot-Plugins"
     plugin_config_prefix = "p115urlcachefix_"
@@ -97,61 +97,93 @@ class P115UrlCacheFix(_PluginBase):
 
     def get_form(self) -> Tuple[List[dict], Dict[str, Any]]:
         """提供启用开关、缓存模式、固定时长及接管状态"""
+        fields = [
+            {
+                "component": "VAlert",
+                "props": {
+                    "type": "info",
+                    "variant": "tonal",
+                    "density": "compact",
+                    "class": "text-body-2",
+                    "text": "适用于直链有效期较短、疑似复用过期直链导致播放或续播失败的情况。原插件使用正常时，不建议开启。",
+                },
+            },
+            {
+                "component": "VSwitch",
+                "props": {
+                    "model": "enabled",
+                    "label": "启用缓存修正",
+                    "color": "primary",
+                    "density": "compact",
+                    "hideDetails": True,
+                },
+            },
+            {
+                "component": "VSelect",
+                "props": {
+                    "variant": "outlined",
+                    "density": "comfortable",
+                    "hideDetails": True,
+                    "model": "mode",
+                    "label": "缓存模式",
+                    "items": [
+                        {"title": "限时缓存（推荐）", "value": "limit"},
+                        {"title": "跳过缓存读取（排查用）", "value": "bypass"},
+                    ],
+                },
+            },
+            {
+                "component": "VSelect",
+                "props": {
+                    "variant": "outlined",
+                    "density": "comfortable",
+                    "hideDetails": True,
+                    "model": "minutes",
+                    "label": "最长缓存时间",
+                    "items": [
+                        {
+                            "title": f"{minutes}分钟" if minutes < 60 else f"{minutes // 60}小时",
+                            "value": minutes,
+                        }
+                        for minutes in (15, 30, 60, 120, 360, 720)
+                    ],
+                },
+            },
+            {
+                "component": "div",
+                "props": {"class": "text-body-2 text-medium-emphasis"},
+                "text": f"当前生效状态：{self._status}。修改后点击保存生效，无需重启。",
+            },
+            {
+                "component": "VAlert",
+                "props": {
+                    "type": "info",
+                    "variant": "tonal",
+                    "density": "compact",
+                    "class": "text-body-2",
+                    "text": "读取不续期，且不晚于CDN到期前5分钟；不同UA分开缓存。首次使用会重新解析直链，跳过模式会增加接口请求。本补丁不会延长直链有效期。",
+                },
+            },
+        ]
         return [
             {
                 "component": "VForm",
+                "props": {"style": {"max-width": "720px", "margin": "0 auto"}},
                 "content": [
                     {
-                        "component": "VAlert",
-                        "props": {
-                            "type": "info",
-                            "text": "本补丁适用于CDN直链有效期较短、疑似复用过期直链导致播放或续播失败的情况。原插件使用正常时不建议开启；本补丁不会延长CDN直链的有效期。",
-                        },
-                    },
-                    {
-                        "component": "VSwitch",
-                        "props": {"model": "enabled", "label": "启用缓存修正"},
-                    },
-                    {
-                        "component": "VSelect",
-                        "props": {
-                            "model": "mode",
-                            "label": "缓存模式",
-                            "items": [
-                                {"title": "限时缓存（推荐）", "value": "limit"},
-                                {"title": "跳过缓存读取（排查用）", "value": "bypass"},
-                            ],
-                        },
-                    },
-                    {
-                        "component": "VSelect",
-                        "props": {
-                            "model": "minutes",
-                            "label": "最长缓存时间",
-                            "items": [
-                                {
-                                    "title": f"{minutes}分钟" if minutes < 60 else f"{minutes // 60}小时",
-                                    "value": minutes,
-                                }
-                                for minutes in (15, 30, 60, 120, 360, 720)
-                            ],
-                        },
-                    },
-                    {"component": "VAlert", "props": {"type": "info", "text": self._status}},
-                    {
-                        "component": "VAlert",
-                        "props": {
-                            "type": "info",
-                            "text": "限时缓存从获取直链时计时，读取不会续期；同时遵守CDN的t参数和原插件到期时间。不同UA分开缓存。启用后不导入旧直链，首次播放会重新解析。跳过模式每次请求都重新解析，会增加115接口请求。",
-                        },
-                    },
+                        "component": "VRow",
+                        "content": [
+                            {"component": "VCol", "props": {"cols": 12}, "content": [field]}
+                            for field in fields
+                        ],
+                    }
                 ],
             }
         ], {"enabled": False, "mode": "limit", "minutes": 15}
 
-    def get_page(self) -> List[dict]:
-        """展示当前接管状态"""
-        return [{"component": "VAlert", "props": {"type": "info", "text": self._status}}]
+    def get_page(self) -> Optional[List[dict]]:
+        """不提供独立详情页，点击插件卡片直接打开配置"""
+        pass
 
     def stop_service(self) -> None:
         """禁用或卸载时恢复原方法，保留原插件配置和数据库"""

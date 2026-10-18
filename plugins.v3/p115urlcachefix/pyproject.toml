@@ -1,6 +1,6 @@
 [project]
 name = "moviepilot-plugin-p115urlcachefix"
-version = "3.0.0"
+version = "3.0.1"
 description = "MoviePilot V3 115 直链缓存修正插件"
 requires-python = ">=3.14"
 dependencies = []
