@@ -1,0 +1,15 @@
+{
+  "FileNameCategory": {
+    "name": "文件名多级分类",
+    "description": "根据原始文件名中的关键字（支持正则表达式）来自定义媒体分类。",
+    "labels": "文件整理",
+    "version": "3.0.0",
+    "icon": "Bookstack_A.png",
+    "author": "narapeka",
+    "level": 1,
+    "system_version": ">=3.1.7",
+    "history": {
+      "v3.0.0": "适配 MoviePilot V3 SDK 和整理事件，保留现有规则格式、年代及首字母分类，不修改事件中的原始媒体对象"
+    }
+  }
+}

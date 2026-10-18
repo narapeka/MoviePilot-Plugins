@@ -1,0 +1,6 @@
+[project]
+name = "moviepilot-plugin-filenamecategory"
+version = "3.0.0"
+description = "MoviePilot V3 文件名多级分类插件"
+requires-python = ">=3.14"
+dependencies = ["pypinyin>=0.50.0,<1"]
