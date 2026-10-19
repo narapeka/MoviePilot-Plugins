@@ -18,7 +18,7 @@ class P115UrlCacheFix(_PluginBase):
     plugin_name = "115直链缓存修正"
     plugin_desc = "为115网盘STRM助手限制直链缓存时长，或跳过缓存读取"
     plugin_icon = "https://raw.githubusercontent.com/narapeka/MoviePilot-Plugins/main/icons/P115UrlCacheFix.svg"
-    plugin_version = "3.0.1"
+    plugin_version = "3.0.2"
     plugin_author = "narapeka"
     author_url = "https://github.com/narapeka/MoviePilot-Plugins"
     plugin_config_prefix = "p115urlcachefix_"

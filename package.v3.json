@@ -3,12 +3,13 @@
     "name": "115直链缓存修正",
     "description": "为115网盘STRM助手限制直链缓存时长，或跳过缓存读取",
     "labels": "115,缓存,播放",
-    "version": "3.0.1",
+    "version": "3.0.2",
     "icon": "https://raw.githubusercontent.com/narapeka/MoviePilot-Plugins/main/icons/P115UrlCacheFix.svg",
     "author": "narapeka",
     "level": 1,
     "system_version": ">=3.1.7",
     "history": {
+      "v3.0.2": "补充缓存写入INFO及命中、未命中、到期、跳过读取DEBUG日志，显示带时区的实际复用截止时间；保留原插件日志，不输出完整签名URL及UA，缓存规则不变",
       "v3.0.1": "点击插件卡片直接打开配置；采用原生网格改善间距和窄屏布局，柔化提示并明确保存后的生效状态，缓存规则保持不变",
       "v3.0.0": "适配V3 SDK和重载事件快照，提供默认15分钟的固定直链缓存、跳过缓存及停用恢复，遵守CDN到期时间"
     }

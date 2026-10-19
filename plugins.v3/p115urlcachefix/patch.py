@@ -1,9 +1,13 @@
 """仅接管 115StrmHelper 单例的 302 缓存，不修改源文件"""
 
 import inspect
+from datetime import datetime
+from math import ceil
 from time import time
 from typing import Any, Dict, Optional
 from urllib.parse import parse_qs, urlsplit
+
+from app.sdk.logging import logger
 
 
 class RedirectCachePatch:
@@ -58,14 +62,32 @@ class RedirectCachePatch:
     def _deadline(self, entry: Dict[str, Any]) -> float:
         return min(entry["expires_at"], entry["fetched_at"] + self._minutes * 60)
 
+    @staticmethod
+    def _format_time(timestamp: float) -> str:
+        return datetime.fromtimestamp(timestamp).astimezone().isoformat(" ", timespec="seconds")
+
     async def _get(self, pick_code: str, ua_code: str) -> Optional[str]:
         if self._mode == "bypass":
+            logger.debug(f"【115直链缓存修正】跳过缓存读取 pickcode={pick_code}，返回未命中")
             return None
         entry = await self._cache.get(
             key=self._target._make_key(pick_code, ua_code), region=self._region
         )
-        if entry is None or time() >= self._deadline(entry):
+        if entry is None:
+            logger.debug(f"【115直链缓存修正】缓存未命中 pickcode={pick_code}，交由原插件处理")
             return None
+        deadline = self._deadline(entry)
+        remaining = deadline - time()
+        if remaining <= 0:
+            logger.debug(
+                f"【115直链缓存修正】缓存已到期 pickcode={pick_code} "
+                f"实际复用截止={self._format_time(deadline)}，返回未命中，交由原插件处理"
+            )
+            return None
+        logger.debug(
+            f"【115直链缓存修正】缓存命中 pickcode={pick_code} "
+            f"剩余={ceil(remaining)}秒"
+        )
         return entry["url"]
 
     async def _set(
@@ -77,6 +99,9 @@ class RedirectCachePatch:
             cdn_expires_at = int(parse_qs(urlsplit(url).query)["t"][0])
         except (KeyError, ValueError):
             await self._cache.delete(key=key, region=self._region)
+            logger.debug(
+                f"【115直链缓存修正】未缓存 pickcode={pick_code}，CDN的t参数缺失或无效"
+            )
             return
         deadline = min(
             now + self._minutes * 60,
@@ -85,6 +110,10 @@ class RedirectCachePatch:
         )
         if deadline <= now:
             await self._cache.delete(key=key, region=self._region)
+            logger.debug(
+                f"【115直链缓存修正】未缓存 pickcode={pick_code}，已到安全截止时间 "
+                f"截止={self._format_time(deadline)}"
+            )
             return
         await self._cache.set(
             key=key,
@@ -92,6 +121,21 @@ class RedirectCachePatch:
             ttl=self._RETENTION_SECONDS,
             region=self._region,
         )
+        if self._mode == "bypass":
+            logger.debug(
+                f"【115直链缓存修正】记录有效条目 pickcode={pick_code} "
+                f"模式=跳过缓存，仅供多端计数，不复用直链 "
+                f"条目截止={self._format_time(deadline)}"
+            )
+        else:
+            logger.info(
+                f"【115直链缓存修正】写入缓存 pickcode={pick_code} "
+                f"模式=限时{self._minutes}分钟 "
+                f"CDN到期={self._format_time(cdn_expires_at)} "
+                f"原插件截止={self._format_time(float(expires_time))} "
+                f"实际复用截止={self._format_time(deadline)} "
+                f"剩余={max(0, ceil(deadline - time()))}秒"
+            )
 
     async def _count_by_pick_code(self, pick_code: str) -> int:
         prefix = self._target._make_key(pick_code, "")
@@ -105,3 +149,4 @@ class RedirectCachePatch:
     async def _clear(self) -> None:
         await self._cache.clear(region=self._region)
         await self._original["clear"]()
+        logger.info("【115直链缓存修正】已清空接管区域及原插件302缓存")
